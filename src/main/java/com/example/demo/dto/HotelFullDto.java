@@ -1,9 +1,11 @@
 package com.example.demo.dto;
 
 import lombok.Data;
-import java.util.List;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+
+import java.util.List;
 
 @Data
 public class HotelFullDto {
@@ -18,8 +20,13 @@ public class HotelFullDto {
 
     private String brand;
 
+    @Valid
     private AddressDto address;
+
+    @Valid
     private ContactsDto contacts;
+
+    @Valid
     private ArrivalTimeDto arrivalTime;
 
     private List<String> amenities;
