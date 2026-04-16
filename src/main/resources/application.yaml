@@ -23,3 +23,8 @@ spring:
 
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.yaml
+
+logging:
+  level:
+    org.springdoc: DEBUG
+    org.springframework.web: DEBUG

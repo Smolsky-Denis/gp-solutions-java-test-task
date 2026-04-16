@@ -97,17 +97,32 @@ public class HotelServiceImpl implements HotelService {
 
         return switch (param.toLowerCase()) {
             case "brand" -> hotels.stream()
-                    .collect(Collectors.groupingBy(Hotel::getBrand, Collectors.counting()));
+                    .map(h -> h.getBrand() == null ? "UNKNOWN" : h.getBrand())
+                    .collect(Collectors.groupingBy(b -> b, Collectors.counting()));
+
             case "city" -> hotels.stream()
-                    .collect(Collectors.groupingBy(h -> safeAddress(h).getCity(), Collectors.counting()));
+                    .map(h -> {
+                        var a = h.getAddress();
+                        return (a == null || a.getCity() == null) ? "UNKNOWN" : a.getCity();
+                    })
+                    .collect(Collectors.groupingBy(c -> c, Collectors.counting()));
+
             case "country" -> hotels.stream()
-                    .collect(Collectors.groupingBy(h -> safeAddress(h).getCountry(), Collectors.counting()));
+                    .map(h -> {
+                        var a = h.getAddress();
+                        return (a == null || a.getCountry() == null) ? "UNKNOWN" : a.getCountry();
+                    })
+                    .collect(Collectors.groupingBy(c -> c, Collectors.counting()));
+
             case "amenities" -> hotels.stream()
                     .flatMap(h -> h.getAmenities() == null ? List.<String>of().stream() : h.getAmenities().stream())
+                    .map(a -> a == null ? "UNKNOWN" : a)
                     .collect(Collectors.groupingBy(a -> a, Collectors.counting()));
+
             default -> throw new RuntimeException("Invalid histogram parameter");
         };
     }
+
 
     @Override
     public void delete(Long id) {
