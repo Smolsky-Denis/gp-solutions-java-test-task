@@ -13,16 +13,11 @@ import org.mockito.Mockito;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
 public class HotelServiceImplTest {
 
@@ -33,6 +28,10 @@ public class HotelServiceImplTest {
     void setUp() {
         hotelRepository = Mockito.mock(HotelRepository.class);
         hotelServiceImpl = new HotelServiceImpl(hotelRepository);
+
+        // 🔥 FIX: save should return same object
+        when(hotelRepository.save(any(Hotel.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
     }
 
     @Test
@@ -54,20 +53,34 @@ public class HotelServiceImplTest {
         assertEquals("Test Hotel", result.get(0).getName());
     }
 
-    @Test 
-    void getById_returnsHotelFullDto() { Hotel testHotel = new Hotel(); testHotel.setId(1L); testHotel.setName("Test Hotel"); testHotel.setDescription("Test Description"); testHotel.setAddress(new Address()); testHotel.setContacts(new Contacts()); testHotel.setAmenities(List.of("WiFi", "Pool")); when(hotelRepository.findById(1L)).thenReturn(Optional.of(testHotel));
+    @Test
+    void getById_returnsHotelFullDto() {
+        Hotel testHotel = new Hotel();
+        testHotel.setId(1L);
+        testHotel.setName("Test Hotel");
+        testHotel.setDescription("Test Description");
+        testHotel.setAddress(new Address());
+        testHotel.setContacts(new Contacts());
+        testHotel.setAmenities(List.of("WiFi", "Pool"));
+
+        when(hotelRepository.findById(1L)).thenReturn(Optional.of(testHotel));
+
         HotelFullDto result = hotelServiceImpl.getById(1L);
+
         assertNotNull(result);
         assertEquals(1L, result.getId());
         assertEquals("Test Hotel", result.getName());
         assertFalse(result.getAmenities().isEmpty());
     }
 
-    @Test 
-    void search_returnsHotelsMatchingName() { 
-        Hotel alpha = new Hotel(); 
-        alpha.setName("Alpha Hotel"); 
-        Hotel beta = new Hotel(); beta.setName("Beta Hotel"); 
+    @Test
+    void search_returnsHotelsMatchingName() {
+        Hotel alpha = new Hotel();
+        alpha.setName("Alpha Hotel");
+
+        Hotel beta = new Hotel();
+        beta.setName("Beta Hotel");
+
         when(hotelRepository.findAll()).thenReturn(List.of(alpha, beta));
 
         List<HotelShortDto> result = hotelServiceImpl.search("Alpha", null, null, null, null);
@@ -76,7 +89,7 @@ public class HotelServiceImplTest {
         assertEquals("Alpha Hotel", result.get(0).getName());
     }
 
-  @Test
+    @Test
     void create_returnsHotelShortDtoWithId() {
         HotelFullDto dto = new HotelFullDto();
         dto.setName("New Hotel");
@@ -98,19 +111,22 @@ public class HotelServiceImplTest {
         assertEquals("New Hotel", result.getName());
     }
 
-    @Test 
-    void addAmenities_addsAmenitiesToHotel() { 
-      Hotel testHotel = new Hotel(); testHotel.setId(1L); 
-      List<String> initialAmenities = new ArrayList<>();
+    @Test
+    void addAmenities_addsAmenitiesToHotel() {
+        Hotel testHotel = new Hotel();
+        testHotel.setId(1L);
 
-      initialAmenities.add("wifi"); 
-      testHotel.setAmenities(initialAmenities); 
-      when(hotelRepository.findById(1L)).thenReturn(Optional.of(testHotel));
+        List<String> initialAmenities = new ArrayList<>();
+        initialAmenities.add("wifi");
 
-      hotelServiceImpl.addAmenities(1L, List.of("pool"));
+        testHotel.setAmenities(initialAmenities);
 
-      verify(hotelRepository).save(testHotel);
-      assertEquals(2, testHotel.getAmenities().size());
-      assertTrue(testHotel.getAmenities().contains("pool"));
+        when(hotelRepository.findById(1L)).thenReturn(Optional.of(testHotel));
+
+        hotelServiceImpl.addAmenities(1L, List.of("pool"));
+
+        verify(hotelRepository).save(testHotel);
+        assertEquals(2, testHotel.getAmenities().size());
+        assertTrue(testHotel.getAmenities().contains("pool"));
     }
 }

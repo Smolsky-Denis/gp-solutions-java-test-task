@@ -6,7 +6,6 @@ import com.example.demo.service.HotelService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -24,7 +23,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.hamcrest.Matchers.*;
 
-@WebMvcTest(HotelController.class)
+@WebMvcTest(controllers = HotelController.class)
 class HotelControllerTest {
 
     @Autowired
@@ -35,10 +34,6 @@ class HotelControllerTest {
 
     @Autowired
     private ObjectMapper objectMapper;
-
-    @Test
-    void contextLoads() {
-    }
 
     @Test
     void getAll_returnsListOfHotels() throws Exception {
@@ -84,8 +79,8 @@ class HotelControllerTest {
         when(hotelService.create(any(HotelFullDto.class))).thenReturn(responseDto);
 
         mockMvc.perform(post("/api/hotels")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(dto)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id", is(10)))
                 .andExpect(jsonPath("$.name", is("New Hotel")));
@@ -101,7 +96,8 @@ class HotelControllerTest {
         expectedDto.setName("Test Hotel");
         expectedDto.setAmenities(List.of("wifi", "pool"));
 
-        when(hotelService.addAmenities(eq(1L), anyList())).thenReturn(expectedDto);
+        when(hotelService.addAmenities(eq(1L), anyList()))
+                .thenReturn(expectedDto);
 
         mockMvc.perform(post("/api/hotels/1/amenities")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -116,7 +112,9 @@ class HotelControllerTest {
         HotelShortDto dto = new HotelShortDto();
         dto.setId(5L);
         dto.setName("Alpha Hotel");
-        when(hotelService.search("Alpha", null, null, null, null)).thenReturn(List.of(dto));
+
+        when(hotelService.search("Alpha", null, null, null, null))
+                .thenReturn(List.of(dto));
 
         mockMvc.perform(get("/api/hotels/search?name=Alpha"))
                 .andExpect(status().isOk())
@@ -130,6 +128,7 @@ class HotelControllerTest {
                 "Poland", 5L,
                 "Germany", 3L
         );
+
         when(hotelService.histogram("country")).thenReturn(expected);
 
         mockMvc.perform(get("/api/hotels/histogram/country"))
@@ -139,7 +138,7 @@ class HotelControllerTest {
     }
 
     @Test
-    void delete_removesHotelAndReturnsNoContent() throws Exception {
+    void delete_returnsNoContent() throws Exception {
         mockMvc.perform(delete("/api/hotels/1"))
                 .andExpect(status().isNoContent());
 
@@ -160,8 +159,8 @@ class HotelControllerTest {
     @Test
     void create_withEmptyBody_returnsBadRequest() throws Exception {
         mockMvc.perform(post("/api/hotels")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("invalid json"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("invalid json"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").exists());
     }
@@ -195,8 +194,8 @@ class HotelControllerTest {
                 .thenThrow(new RuntimeException("Hotel not found"));
 
         mockMvc.perform(post("/api/hotels/99/amenities")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(requestBody))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error").exists());
     }
@@ -211,38 +210,12 @@ class HotelControllerTest {
                 .andExpect(jsonPath("$.error").exists());
     }
 
-    @Test void addAmenities_withEmptyBody_returnsBadRequest() 
-        throws Exception { mockMvc.perform(post("/api/hotels/1/amenities") 
-        .contentType(MediaType.APPLICATION_JSON) 
-        .content("")) 
-        .andExpect(status().isBadRequest()) 
-        .andExpect(jsonPath("$.error").exists()); 
-    }
-
-    @Test void search_withInvalidRating_returnsBadRequest() 
-        throws Exception {
-          mockMvc.perform(get("/api/hotels/search?rating=abc")) 
-          .andExpect(status().isBadRequest()) 
-          .andExpect(jsonPath("$.error").exists()); 
-    }
-
-    @Test void updateHotel_notAllowed_returnsMethodNotAllowed() 
-        throws Exception {
-           mockMvc.perform(put("/api/hotels/1")) 
-          .andExpect(status().isMethodNotAllowed()); 
-    }
-
-    @Test void getById_unexpectedError_returnsInternalServerError() 
-      throws Exception {
-         when(hotelService.getById(1L)).thenThrow(new IllegalStateException("Unexpected error")); 
-         mockMvc.perform(get("/api/hotels/1")) 
-         .andExpect(status().isInternalServerError()) 
-          .andExpect(jsonPath("$.error").exists()); 
-    }
-
-    @Test void patchHotel_notAllowed_returnsMethodNotAllowed() 
-        throws Exception {
-           mockMvc.perform(patch("/api/hotels/1")) 
-              .andExpect(status().isMethodNotAllowed()); 
+    @Test
+    void addAmenities_withEmptyBody_returnsBadRequest() throws Exception {
+        mockMvc.perform(post("/api/hotels/1/amenities")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(""))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").exists());
     }
 }

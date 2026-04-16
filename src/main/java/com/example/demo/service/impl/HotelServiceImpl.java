@@ -4,18 +4,21 @@ import com.example.demo.dto.*;
 import com.example.demo.entity.*;
 import com.example.demo.repository.HotelRepository;
 import com.example.demo.service.HotelService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 public class HotelServiceImpl implements HotelService {
 
     private final HotelRepository hotelRepository;
+
+    public HotelServiceImpl(HotelRepository hotelRepository) {
+        this.hotelRepository = hotelRepository;
+    }
 
     @Override
     public List<HotelShortDto> getAll() {
@@ -32,32 +35,49 @@ public class HotelServiceImpl implements HotelService {
     }
 
     @Override
-    public List<HotelShortDto> search(String name, String brand, String city, String country, List<String> amenities) {
+    public List<HotelShortDto> search(
+            String name,
+            String brand,
+            String city,
+            String country,
+            List<String> amenities
+    ) {
         return hotelRepository.findAll().stream()
                 .filter(hotel -> {
+
                     if (name != null && (hotel.getName() == null ||
                             !hotel.getName().toLowerCase().contains(name.toLowerCase()))) {
                         return false;
                     }
+
                     if (brand != null && (hotel.getBrand() == null ||
                             !hotel.getBrand().equalsIgnoreCase(brand))) {
                         return false;
                     }
+
                     if (city != null && (hotel.getAddress() == null ||
+                            hotel.getAddress().getCity() == null ||
                             !city.equalsIgnoreCase(hotel.getAddress().getCity()))) {
                         return false;
                     }
+
                     if (country != null && (hotel.getAddress() == null ||
+                            hotel.getAddress().getCountry() == null ||
                             !country.equalsIgnoreCase(hotel.getAddress().getCountry()))) {
                         return false;
                     }
+
                     if (amenities != null && !amenities.isEmpty()) {
                         List<String> hotelAmenities = hotel.getAmenities();
                         if (hotelAmenities == null) return false;
+
                         for (String a : amenities) {
-                            if (!hotelAmenities.contains(a)) return false;
+                            if (!hotelAmenities.contains(a)) {
+                                return false;
+                            }
                         }
                     }
+
                     return true;
                 })
                 .map(this::mapToShortDto)
@@ -67,7 +87,9 @@ public class HotelServiceImpl implements HotelService {
     @Override
     public HotelShortDto create(HotelFullDto dto) {
         Hotel hotel = mapToEntity(dto);
+
         Hotel saved = hotelRepository.save(hotel);
+
         return mapToShortDto(saved);
     }
 
@@ -77,17 +99,13 @@ public class HotelServiceImpl implements HotelService {
                 .orElseThrow(() -> new RuntimeException("Hotel not found"));
 
         if (hotel.getAmenities() == null) {
-            hotel.setAmenities(amenities);
-        } else {
-            hotel.getAmenities().addAll(amenities);
+            hotel.setAmenities(new ArrayList<>());
         }
+
+        hotel.getAmenities().addAll(amenities);
 
         Hotel saved = hotelRepository.save(hotel);
 
-        if (saved == null) {
-            saved = hotel;
-        }
-        
         return mapToFullDto(saved);
     }
 
@@ -115,7 +133,9 @@ public class HotelServiceImpl implements HotelService {
                     .collect(Collectors.groupingBy(c -> c, Collectors.counting()));
 
             case "amenities" -> hotels.stream()
-                    .flatMap(h -> h.getAmenities() == null ? List.<String>of().stream() : h.getAmenities().stream())
+                    .flatMap(h -> h.getAmenities() == null
+                            ? List.<String>of().stream()
+                            : h.getAmenities().stream())
                     .map(a -> a == null ? "UNKNOWN" : a)
                     .collect(Collectors.groupingBy(a -> a, Collectors.counting()));
 
@@ -123,13 +143,12 @@ public class HotelServiceImpl implements HotelService {
         };
     }
 
-
     @Override
     public void delete(Long id) {
         hotelRepository.deleteById(id);
     }
 
-    // -------------------- MAPPERS --------------------
+    // ---------------- MAPPERS ----------------
 
     private HotelShortDto mapToShortDto(Hotel hotel) {
         HotelShortDto dto = new HotelShortDto();
@@ -141,27 +160,15 @@ public class HotelServiceImpl implements HotelService {
         return dto;
     }
 
-    private String safe(String value) {
-        return value == null ? "" : value;
-    }
-
-    private String safe(Integer value) {
-        return value == null ? "" : String.valueOf(value);
-    }
-
-    private Address safeAddress(Hotel h) {
-        return h.getAddress() == null ? new Address() : h.getAddress();
-    }
-
     private String buildAddressString(Address address) {
-    if (address == null) return null;
+        if (address == null) return null;
 
-    return String.format("%s %s, %s, %s, %s",
-            safe(address.getHouseNumber()),
-            safe(address.getStreet()),
-            safe(address.getCity()),
-            safe(address.getPostCode()),
-            safe(address.getCountry()));
+        return String.format("%s %s, %s, %s, %s",
+                address.getHouseNumber(),
+                address.getStreet(),
+                address.getCity(),
+                address.getPostCode(),
+                address.getCountry());
     }
 
     private HotelFullDto mapToFullDto(Hotel hotel) {
@@ -176,6 +183,7 @@ public class HotelServiceImpl implements HotelService {
         dto.setArrivalTime(mapArrivalTimeToDto(hotel.getArrivalTime()));
 
         dto.setAmenities(hotel.getAmenities());
+
         return dto;
     }
 
@@ -217,11 +225,13 @@ public class HotelServiceImpl implements HotelService {
         hotel.setArrivalTime(mapArrivalTime(dto.getArrivalTime()));
 
         hotel.setAmenities(dto.getAmenities());
+
         return hotel;
     }
 
     private Address mapAddress(AddressDto dto) {
         if (dto == null) return null;
+
         Address address = new Address();
         address.setHouseNumber(dto.getHouseNumber());
         address.setStreet(dto.getStreet());
@@ -233,6 +243,7 @@ public class HotelServiceImpl implements HotelService {
 
     private Contacts mapContacts(ContactsDto dto) {
         if (dto == null) return null;
+
         Contacts contacts = new Contacts();
         contacts.setPhone(dto.getPhone());
         contacts.setEmail(dto.getEmail());
@@ -241,6 +252,7 @@ public class HotelServiceImpl implements HotelService {
 
     private ArrivalTime mapArrivalTime(ArrivalTimeDto dto) {
         if (dto == null) return null;
+
         ArrivalTime arrival = new ArrivalTime();
         arrival.setCheckIn(dto.getCheckIn());
         arrival.setCheckOut(dto.getCheckOut());
